@@ -1,10 +1,25 @@
 using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 public class PickUp : MonoBehaviour
 {
     private GameObject objectTaken;
     private Transform originalParent;
     private bool isHoldingObject = false;
+    private Dictionary<GameObject, Color> originalColors = new Dictionary<GameObject, Color>();
+
+    private EvacuationSystem evacuationSystem;
+
+    void Start()
+    {
+        // Find the EvacuationSystem in the scene
+        evacuationSystem = FindObjectOfType<EvacuationSystem>();
+        if (evacuationSystem == null)
+        {
+            Debug.LogError("EvacuationSystem not found in the scene!");
+        }
+    }
 
     void Update()
     {
@@ -54,30 +69,48 @@ public class PickUp : MonoBehaviour
     {
         if (objectTaken != null)
         {
-            // Position the object 1 unit in front of the player with y=0
             Vector3 dropPosition = transform.position + transform.forward * 1;
-            dropPosition.y = 3.120279f;
+            dropPosition.y = transform.position.y;
             objectTaken.transform.parent = originalParent;
             objectTaken.transform.position = dropPosition;
 
             isHoldingObject = false;
+            HighlightObject(objectTaken, false);
+
+            // Attempt to evacuate the item using EvacuationSystem
+            if (evacuationSystem != null)
+            {
+                evacuationSystem.AttemptEvacuation(objectTaken);
+            }
+
             objectTaken = null;
         }
     }
 
     void HighlightObject(GameObject obj, bool highlight)
     {
-        // Example of changing color to indicate highlight (requires a Renderer component)
         Renderer objRenderer = obj.GetComponent<Renderer>();
         if (objRenderer != null)
         {
             if (highlight)
             {
-                objRenderer.material.color = Color.yellow; // Change color to yellow
+                if (!originalColors.ContainsKey(obj))
+                {
+                    originalColors[obj] = objRenderer.material.color;
+                }
+                objRenderer.material.color = Color.yellow;
             }
             else
             {
-                objRenderer.material.color = Color.white; // Revert to original color
+                if (originalColors.ContainsKey(obj))
+                {
+                    objRenderer.material.color = originalColors[obj];
+                    originalColors.Remove(obj);
+                }
+                else
+                {
+                    objRenderer.material.color = Color.white;
+                }
             }
         }
     }
