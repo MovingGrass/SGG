@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 
 public class PickUp : MonoBehaviour
 {
@@ -11,13 +12,19 @@ public class PickUp : MonoBehaviour
 
     private EvacuationSystem evacuationSystem;
 
+    [SerializeField] private TextMeshProUGUI actionText;
+
     void Start()
     {
-        // Find the EvacuationSystem in the scene
         evacuationSystem = FindObjectOfType<EvacuationSystem>();
         if (evacuationSystem == null)
         {
             Debug.LogError("EvacuationSystem not found in the scene!");
+        }
+
+        if (actionText == null)
+        {
+            Debug.LogError("Action Text not assigned in the inspector!");
         }
     }
 
@@ -34,6 +41,8 @@ public class PickUp : MonoBehaviour
                 PickUpObject();
             }
         }
+
+        UpdateActionText();
     }
 
     void OnTriggerEnter(Collider other)
@@ -62,6 +71,7 @@ public class PickUp : MonoBehaviour
             objectTaken.transform.parent = transform;
             objectTaken.transform.localPosition = new Vector3(0, 2, 0);
             isHoldingObject = true;
+            AudioManager.Instance.PlayPickupSound();
         }
     }
 
@@ -77,12 +87,12 @@ public class PickUp : MonoBehaviour
             isHoldingObject = false;
             HighlightObject(objectTaken, false);
 
-            // Attempt to evacuate the item using EvacuationSystem
             if (evacuationSystem != null)
             {
                 evacuationSystem.AttemptEvacuation(objectTaken);
             }
 
+            AudioManager.Instance.PlayDropSound();
             objectTaken = null;
         }
     }
@@ -111,6 +121,25 @@ public class PickUp : MonoBehaviour
                 {
                     objRenderer.material.color = Color.white;
                 }
+            }
+        }
+    }
+
+    void UpdateActionText()
+    {
+        if (actionText != null)
+        {
+            if (isHoldingObject)
+            {
+                actionText.text = "[E] Drop";
+            }
+            else if (objectTaken != null)
+            {
+                actionText.text = "[E] Pick up";
+            }
+            else
+            {
+                actionText.text = "";
             }
         }
     }
